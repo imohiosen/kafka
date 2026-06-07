@@ -181,12 +181,46 @@ only checked one record rate and size; a high-volume firehose behaves very diffe
 
 ## 5. Record your results
 
+Fill this in as you go:
+
 | Experiment | `linger.ms` | `batch.size` | `batch-size-avg` | `bufferpool-wait-ratio` | `outgoing-byte-rate` | `request-latency-avg` |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 — defaults | 0 | 16384 | | | | |
 | 2 — linger 100 | 100 | 16384 | | | | |
 | 3 — bigger batch | 100 | 300000 | | | | |
 | 4 — long linger | 1500 | 300000 | | | | |
+
+### Sample results (real run on the workshop cluster)
+
+Your absolute numbers will differ — look at the **trend**. These are from an actual run on
+the single-node Strimzi cluster (`cx23`), `COMPRESSION=none`, throttled to 200 rec/s of
+1000-byte records:
+
+| Experiment | `linger.ms` | `batch.size` | `batch-size-avg` | `bufferpool-wait-ratio` | `outgoing-byte-rate` (B/s) | `request-latency-avg` (ms) | end-to-end avg latency (ms) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 — defaults | 0 | 16384 | **1,159** | 0.000 | **75,910** | **1.02** | **2.7** |
+| 2 — linger 100 | 100 | 16384 | 10,500 | 0.000 | 68,552 | 5.79 | 47 |
+| 3 — bigger batch | 100 | 300000 | 22,164 | 0.000 | 68,275 | 6.14 | 63 |
+| 4 — long linger | 1500 | 300000 | 216,641 | 0.000 | 68,151 | 9.36 | 733 |
+
+**What the numbers say** — exactly the lesson:
+
+- **Exp 1 → 2:** raising `linger.ms` to 100 fattened the batch from ~1 record (1,159 B) to
+  ~10.5 KB (right up against the 16 KB `batch.size` limit — so *size* is now the trigger).
+  But throughput **dropped** (75.9 → 68.6 KB/s) and latency **rose** (1.0 → 5.8 ms; ~2.7 →
+  47 ms end-to-end). Wrong direction.
+- **Exp 3:** giving `batch.size` more room (300 KB) only nudged the avg batch to ~22 KB —
+  nowhere near the limit, because `linger.ms=100` doesn't allow enough time to fill it. Still
+  worse.
+- **Exp 4:** `linger.ms=1500` finally fills batches (~217 KB, near the 300 KB cap), but
+  records now sit in the queue ~1 s (`record-queue-time-avg`) — end-to-end latency blew up to
+  **733 ms** and throughput still didn't beat the baseline.
+- `bufferpool-wait-ratio` stayed **0.000** throughout: the broker was never the bottleneck —
+  the added latency came purely from the producer *waiting to batch*.
+
+**Conclusion confirmed:** for 200 rec/s of 1000-byte records, the **defaults win**. Batching
+pays off when there's enough incoming load to fill batches *without waiting*; under a light,
+throttled rate, lingering just adds latency for no throughput gain.
 
 ---
 
