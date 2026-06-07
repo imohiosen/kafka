@@ -60,7 +60,7 @@ locals {
     package_update: true
     runcmd:
       - PUBLIC_IP=$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4)
-      - curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644 --tls-san $PUBLIC_IP" sh -
+      - curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644 --tls-san $PUBLIC_IP --disable traefik" sh -
   EOT
 }
 
@@ -92,7 +92,8 @@ resource "null_resource" "kubeconfig" {
     command = <<-EOT
       set -e
       for i in $(seq 1 30); do
-        scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 \
+        scp -i ${pathexpand(replace(var.ssh_public_key_path, ".pub", ""))} \
+          -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 \
           root@${hcloud_server.workshop.ipv4_address}:/etc/rancher/k3s/k3s.yaml ${path.module}/kubeconfig 2>/dev/null && break
         echo "waiting for k3s kubeconfig... attempt $i/30"; sleep 10
       done

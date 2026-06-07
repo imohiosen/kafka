@@ -49,6 +49,12 @@ FETCH_MIN_BYTES=1      ./consumer-perf.sh
 FETCH_MIN_BYTES=100000 ./consumer-perf.sh
 ```
 
+For a guided, end-to-end walkthrough of the linger/batch trade-off (the four
+experiments + how to read the metrics), follow
+[exercises/01-producer-performance-tuning.md](../exercises/01-producer-performance-tuning.md).
+It drives this script in `PRINT_METRICS=1 COMPRESSION=none` mode so the reported
+`batch-size-avg` reflects real record bytes rather than compressed bytes.
+
 ## Env vars
 
 | Var | Default | Applies to |
@@ -59,5 +65,6 @@ FETCH_MIN_BYTES=100000 ./consumer-perf.sh
 | `TOPIC` | `workshop.events` | both |
 | `RECORDS` / `RECORD_SIZE` / `THROUGHPUT` | `1000000` / `200` / `-1` | producer |
 | `ACKS` / `LINGER_MS` / `BATCH_SIZE` / `COMPRESSION` | `all` / `5` / `16384` / `lz4` | producer |
+| `PRINT_METRICS` | `0` | producer (set `1` to dump + filter the key client metrics) |
 | `MESSAGES` / `GROUP` | `1000000` / `perf-consumer` | consumer |
 | `FETCH_MIN_BYTES` / `FETCH_MAX_WAIT_MS` / `MAX_PARTITION_FETCH_BYTES` | `1` / `500` / `1048576` | consumer |

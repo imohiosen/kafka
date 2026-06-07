@@ -76,7 +76,8 @@ kafka/
 │   ├── src/                   # producer + consumer services, /produce controller
 │   ├── package.json
 │   └── README.md
-└── benchmarks/                # producer-perf.sh / consumer-perf.sh + README
+├── benchmarks/                # producer-perf.sh / consumer-perf.sh + README
+└── exercises/                 # step-by-step hands-on walkthroughs (start at 01)
 ```
 
 Each app and the benchmarks have their own README with run instructions and the full
@@ -157,10 +158,14 @@ KAFKA_BOOTSTRAP_SERVERS=<broker:port> npm run start:dev   # see nestjs/README.md
 
 ## Workshop modules
 
+> Hands-on walkthroughs live in [`exercises/`](exercises/) — start with
+> [Exercise 1: Producer performance tuning](exercises/01-producer-performance-tuning.md).
+
 1. **Hello, Kafka** — produce and consume a single message end to end; understand topics,
    partitions, and offsets.
 2. **Producer tuning** — measure throughput, then tune batching, compression, and `acks`;
    observe the latency/throughput/durability trade-offs.
+   → [exercises/01-producer-performance-tuning.md](exercises/01-producer-performance-tuning.md)
 3. **Consumer tuning** — tune fetch sizes and poll batches; explore consumer groups and
    rebalancing; compare commit strategies.
 4. **Delivery guarantees** — at-most-once vs. at-least-once vs. exactly-once; idempotent

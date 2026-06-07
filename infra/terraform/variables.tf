@@ -11,9 +11,9 @@ variable "server_name" {
 }
 
 variable "server_type" {
-  description = "Hetzner server type. cx22 = 2 shared vCPU / 4 GB RAM, a fine starting point for the workshop."
+  description = "Hetzner server type. cx23 = 2 shared vCPU / 4 GB RAM, a fine starting point for the workshop."
   type        = string
-  default     = "cx22"
+  default     = "cx23"
 }
 
 variable "location" {

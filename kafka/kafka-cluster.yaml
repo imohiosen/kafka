@@ -6,7 +6,7 @@
 # Single combined controller+broker node. Replication factors are 1 because this
 # is a one-node learning cluster — NOT production settings.
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: dual-role
@@ -26,7 +26,7 @@ spec:
         size: 10Gi
         deleteClaim: true
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: my-cluster
@@ -36,7 +36,7 @@ metadata:
     strimzi.io/kraft: enabled
 spec:
   kafka:
-    version: 3.8.0
+    version: 4.2.0
     listeners:
       # Internal listener for apps running inside the cluster:
       #   bootstrap = my-cluster-kafka-bootstrap.kafka.svc:9092
@@ -66,7 +66,7 @@ spec:
 ---
 # The workshop topic. 3 partitions so you can experiment with consumer-group
 # parallelism (max useful consumers in a group == partition count).
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: workshop.events

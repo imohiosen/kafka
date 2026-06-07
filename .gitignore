@@ -17,3 +17,4 @@ dist/
 build/
 
 .DS_Store
+infra/terraform/.terraform.lock.hcl
