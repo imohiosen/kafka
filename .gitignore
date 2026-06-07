@@ -1,0 +1,19 @@
+# Secrets — never commit
+.env
+*.env
+!*.env.example
+
+# Terraform (also ignored in infra/terraform/.gitignore)
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform/
+**/terraform.tfvars
+**/kubeconfig
+
+# Builds / deps
+node_modules/
+target/
+dist/
+build/
+
+.DS_Store

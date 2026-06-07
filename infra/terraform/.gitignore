@@ -1,0 +1,9 @@
+# Terraform state & local secrets — never commit these
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+kubeconfig
+
+# Keep the provider lock file committed:
+!.terraform.lock.hcl

@@ -1,0 +1,102 @@
+# =============================================================================
+# Kafka tuning workshop — Spring Boot config
+#
+# This file is the LESSON. Every Kafka knob below is exposed as an environment
+# variable with a sensible default using ${ENV_VAR:default} syntax, so you can
+# change behaviour WITHOUT editing this file:
+#
+#   ACKS=1 LINGER_MS=20 ./mvnw spring-boot:run
+#
+# Change ONE knob at a time, hit /produce, and watch the consumer throughput log.
+# =============================================================================
+
+server:
+  # HTTP port for the REST controller (POST /produce).
+  port: ${SERVER_PORT:8080}
+
+# Topic everything reads from / writes to. MUST match the NestJS app + benchmarks.
+workshop:
+  topic: ${KAFKA_TOPIC:workshop.events}
+
+spring:
+  application:
+    name: kafka-workshop
+
+  kafka:
+    # Broker address(es). Comma-separated host:port list.
+    # Default localhost:9092 is the plain Docker local-dev path; point this at the
+    # Strimzi external bootstrap (e.g. <node-ip>:32094) when using the cluster.
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    # -------------------------------------------------------------------------
+    # PRODUCER tuning knobs
+    # -------------------------------------------------------------------------
+    producer:
+      # Messages are plain JSON strings -> use the String serializers.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+      # How many replicas must acknowledge a write before it's considered "sent".
+      #   0   = fire-and-forget (fastest, can lose data)
+      #   1   = leader only (fast, can lose data if leader dies before replication)
+      #   all = leader + all in-sync replicas (slowest, strongest durability)
+      acks: ${ACKS:all}
+
+      # Idempotent producer: dedupes retries so each record is written exactly once
+      # on the broker. Safe to leave on; required for some exactly-once setups.
+      # NOTE: acks=all is required when this is true.
+      properties:
+        enable.idempotence: ${ENABLE_IDEMPOTENCE:true}
+
+        # How long (ms) the producer waits to fill a batch before sending it.
+        # 0 = send immediately (low latency). A few ms lets batches fill = more
+        # throughput under load. (Spring maps this to the linger.ms client prop.)
+        linger.ms: ${LINGER_MS:5}
+
+      # Max bytes per per-partition batch. Bigger batches -> fewer, fatter network
+      # requests -> higher throughput, slightly higher latency. 16384 = 16 KiB.
+      batch-size: ${BATCH_SIZE:16384}
+
+      # Compress batches before sending. Trades CPU for network/disk.
+      #   none | gzip | snappy | lz4 | zstd   (lz4/zstd are good throughput defaults)
+      compression-type: ${COMPRESSION_TYPE:lz4}
+
+    # -------------------------------------------------------------------------
+    # CONSUMER tuning knobs
+    # -------------------------------------------------------------------------
+    consumer:
+      # Messages are plain JSON strings -> use the String deserializers.
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+      # Consumer group id. Members of the same group share the topic's partitions
+      # (parallelism). Change it to read the topic independently from scratch.
+      group-id: ${KAFKA_GROUP_ID:spring-workshop}
+
+      # Where to start when this group has NO committed offset yet:
+      #   earliest = replay from the beginning of the topic
+      #   latest   = only consume messages produced from now on
+      auto-offset-reset: ${AUTO_OFFSET_RESET:earliest}
+
+      # Auto-commit offsets on a timer (at-most/at-least-once is fuzzy).
+      # Turn OFF and commit manually for precise at-least-once control.
+      enable-auto-commit: ${ENABLE_AUTO_COMMIT:true}
+
+      # Max records returned by a single poll(). Lower this if per-record
+      # processing is slow, to avoid exceeding max.poll.interval.ms (rebalance).
+      max-poll-records: ${MAX_POLL_RECORDS:500}
+
+      properties:
+        # Min bytes the broker waits to accumulate before answering a fetch.
+        # Higher -> fewer, fatter fetches (throughput) at the cost of a little latency.
+        fetch.min.bytes: ${FETCH_MIN_BYTES:1}
+
+        # Max time (ms) the broker waits to satisfy fetch.min.bytes before
+        # responding anyway. Caps the latency cost of the setting above.
+        fetch.max.wait.ms: ${FETCH_MAX_WAIT_MS:500}
+
+# Keep the startup log readable; show INFO from our package.
+logging:
+  level:
+    com.example.kafkaworkshop: INFO
+    org.apache.kafka: WARN

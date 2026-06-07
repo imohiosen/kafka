@@ -1,0 +1,80 @@
+# Strimzi Kafka cluster for the workshop (KRaft mode — no ZooKeeper).
+# Apply after the Strimzi operator is installed:
+#   kubectl apply -f kafka/kafka-cluster.yaml -n kafka
+#   kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
+#
+# Single combined controller+broker node. Replication factors are 1 because this
+# is a one-node learning cluster — NOT production settings.
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: dual-role
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 10Gi
+        deleteClaim: true
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: my-cluster
+  namespace: kafka
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+spec:
+  kafka:
+    version: 3.8.0
+    listeners:
+      # Internal listener for apps running inside the cluster:
+      #   bootstrap = my-cluster-kafka-bootstrap.kafka.svc:9092
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      # External listener (NodePort) for apps on your laptop / the Hetzner host.
+      # The firewall (infra/terraform) opens nodePort 32094.
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: false
+        configuration:
+          bootstrap:
+            nodePort: 32094
+    config:
+      # Single broker -> everything must be RF 1.
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+---
+# The workshop topic. 3 partitions so you can experiment with consumer-group
+# parallelism (max useful consumers in a group == partition count).
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: workshop.events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 604800000 # 7 days
